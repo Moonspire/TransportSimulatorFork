@@ -151,6 +151,10 @@ public class WrapperWorld extends AWrapperWorld {
         return this;
     }
 
+    public World getWrappedWorld() {
+        return world;
+    }
+
     @Override
     public boolean isClient() {
         return world.isRemote;

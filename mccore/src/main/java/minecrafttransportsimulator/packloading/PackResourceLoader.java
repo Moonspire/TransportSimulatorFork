@@ -1,21 +1,12 @@
 package minecrafttransportsimulator.packloading;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import minecrafttransportsimulator.jsondefs.AJSONBase;
-import minecrafttransportsimulator.jsondefs.AJSONItem;
-import minecrafttransportsimulator.jsondefs.JSONBullet;
-import minecrafttransportsimulator.jsondefs.JSONDecor;
-import minecrafttransportsimulator.jsondefs.JSONInstrument;
-import minecrafttransportsimulator.jsondefs.JSONItem;
-import minecrafttransportsimulator.jsondefs.JSONPanel;
-import minecrafttransportsimulator.jsondefs.JSONPart;
-import minecrafttransportsimulator.jsondefs.JSONPoleComponent;
-import minecrafttransportsimulator.jsondefs.JSONRoadComponent;
-import minecrafttransportsimulator.jsondefs.JSONSkin;
-import minecrafttransportsimulator.jsondefs.JSONVehicle;
+import minecrafttransportsimulator.items.components.AItemPack;
+import minecrafttransportsimulator.jsondefs.*;
 
 /**
  * Class responsible for loading pack resource files from pack archives.  This happens both during load
@@ -67,7 +58,7 @@ public class PackResourceLoader {
         }
     }
 
-    public enum ItemClassification {
+    public enum ItemClassification implements CustomItemClassification {
         VEHICLE(JSONVehicle.class),
         PART(JSONPart.class),
         INSTRUMENT(JSONInstrument.class),
@@ -79,7 +70,7 @@ public class PackResourceLoader {
         SKIN(JSONSkin.class),
         PANEL(JSONPanel.class);
 
-        public final Class<? extends AJSONBase> representingClass;
+        private final Class<? extends AJSONBase> representingClass;
 
         ItemClassification(Class<? extends AJSONBase> representingClass) {
             this.representingClass = representingClass;
@@ -93,15 +84,37 @@ public class PackResourceLoader {
             return assetTypes;
         }
 
+        @Override
         public String toDirectory() {
             return this.name().toLowerCase(Locale.ROOT) + "s/";
         }
 
-        public static ItemClassification fromDirectory(String directory) {
+        @Override
+        public Class<? extends AJSONBase> getRepresentingClass() {
+            return representingClass;
+        }
+
+        // Returns null as Enumerated Classifications use hardcoded behavior located at PackParser#parseAllDefinitions
+        @Override
+        public AItemPack<?> getItem(AJSONMultiModelProvider provider, JSONSubDefinition subDefinition, String packID) {
+            return null;
+        }
+
+        // Returns null as Enumerated Classifications use hardcoded behavior located at JSONParser#importJSON
+        @Override
+        public AJSONBase loadDefinition(File jsonFile, AJSONBase definition) {
+            return null;
+        }
+
+        public static CustomItemClassification fromDirectory(String directory) {
             try {
                 return ItemClassification.valueOf(directory.substring(0, directory.length() - "s/".length()).toUpperCase(Locale.ROOT));
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Was told to get classification for directory: " + directory + " but none exists.  Contact the mod author!");
+            } catch (Exception ignored) {
+                try {
+                    return CustomClassifications.fromDirectory(directory);
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Was told to get classification for directory: " + directory + " but none exists.  Contact the mod author!");
+                }
             }
         }
     }

@@ -1,7 +1,7 @@
 package minecrafttransportsimulator.jsondefs;
 
+import minecrafttransportsimulator.packloading.CustomItemClassification;
 import minecrafttransportsimulator.packloading.PackParser;
-import minecrafttransportsimulator.packloading.PackResourceLoader.ItemClassification;
 
 /**
  * Base JSON class for all pack-loaded content.  All pack-loaded JSONs MUST extend this class.
@@ -32,5 +32,5 @@ public abstract class AJSONBase {
      * Classification for this object.  This is used to determine what folders this JSON definition,
      * and it's associated resources, are found in.
      */
-    public transient ItemClassification classification;
+    public transient CustomItemClassification classification;
 }

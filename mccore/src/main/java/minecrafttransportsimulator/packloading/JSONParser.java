@@ -16,14 +16,7 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -566,99 +559,106 @@ public class JSONParser {
     public static String importJSON(File jsonFile, AJSONBase definitionToOverride, boolean returnErrorsOnly) {
     	try {
             final AJSONBase loadedDefinition;
-            switch (definitionToOverride.classification) {
-                case VEHICLE: {
-                    JSONVehicle vehicleDefinition = (JSONVehicle) definitionToOverride;
-                    JSONVehicle loadedVehicleDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONVehicle.class, vehicleDefinition.packID, vehicleDefinition.systemName);
-                    LegacyCompatSystem.performLegacyCompats(loadedVehicleDefinition);
-                    JSONParser.validateFields(loadedVehicleDefinition, "/", 1);
-                    vehicleDefinition.motorized = loadedVehicleDefinition.motorized;
-                    loadedDefinition = loadedVehicleDefinition;
-                    break;
+            if (definitionToOverride.classification instanceof PackResourceLoader.ItemClassification) {
+                PackResourceLoader.ItemClassification classification = (PackResourceLoader.ItemClassification) definitionToOverride.classification;
+                switch (classification) {
+                    case VEHICLE: {
+                        JSONVehicle vehicleDefinition = (JSONVehicle) definitionToOverride;
+                        JSONVehicle loadedVehicleDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONVehicle.class, vehicleDefinition.packID, vehicleDefinition.systemName);
+                        LegacyCompatSystem.performLegacyCompats(loadedVehicleDefinition);
+                        JSONParser.validateFields(loadedVehicleDefinition, "/", 1);
+                        vehicleDefinition.motorized = loadedVehicleDefinition.motorized;
+                        loadedDefinition = loadedVehicleDefinition;
+                        break;
+                    }
+                    case PART: {
+                        JSONPart partDefinition = (JSONPart) definitionToOverride;
+                        JSONPart loadedPartDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONPart.class, partDefinition.packID, partDefinition.systemName);
+                        LegacyCompatSystem.performLegacyCompats(loadedPartDefinition);
+                        JSONParser.validateFields(loadedPartDefinition, "/", 1);
+                        partDefinition.generic = loadedPartDefinition.generic;
+                        partDefinition.engine = loadedPartDefinition.engine;
+                        partDefinition.ground = loadedPartDefinition.ground;
+                        partDefinition.propeller = loadedPartDefinition.propeller;
+                        partDefinition.seat = loadedPartDefinition.seat;
+                        partDefinition.gun = loadedPartDefinition.gun;
+                        partDefinition.interactable = loadedPartDefinition.interactable;
+                        partDefinition.effector = loadedPartDefinition.effector;
+                        loadedDefinition = loadedPartDefinition;
+                        break;
+                    }
+                    case INSTRUMENT: {
+                        JSONInstrument instrumentDefinition = (JSONInstrument) definitionToOverride;
+                        JSONInstrument loadedInstrumentDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONInstrument.class, instrumentDefinition.packID, instrumentDefinition.systemName);
+                        LegacyCompatSystem.performLegacyCompats(loadedInstrumentDefinition);
+                        JSONParser.validateFields(loadedInstrumentDefinition, "/", 1);
+                        instrumentDefinition.components = loadedInstrumentDefinition.components;
+                        loadedDefinition = loadedInstrumentDefinition;
+                        break;
+                    }
+                    case DECOR: {
+                        JSONDecor decorDefinition = (JSONDecor) definitionToOverride;
+                        JSONDecor loadedDecorDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONDecor.class, decorDefinition.packID, decorDefinition.systemName);
+                        LegacyCompatSystem.performLegacyCompats(loadedDecorDefinition);
+                        JSONParser.validateFields(loadedDecorDefinition, "/", 1);
+                        decorDefinition.decor = loadedDecorDefinition.decor;
+                        loadedDefinition = loadedDecorDefinition;
+                        break;
+                    }
+                    case ROAD: {
+                        JSONRoadComponent roadDefinition = (JSONRoadComponent) definitionToOverride;
+                        JSONRoadComponent loadedRoadDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONRoadComponent.class, roadDefinition.packID, roadDefinition.systemName);
+                        LegacyCompatSystem.performLegacyCompats(loadedRoadDefinition);
+                        JSONParser.validateFields(loadedRoadDefinition, "/", 1);
+                        roadDefinition.road = loadedRoadDefinition.road;
+                        loadedDefinition = loadedRoadDefinition;
+                        break;
+                    }
+                    case POLE: {
+                        JSONPoleComponent poleDefinition = (JSONPoleComponent) definitionToOverride;
+                        JSONPoleComponent loadedPoleDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONPoleComponent.class, poleDefinition.packID, poleDefinition.systemName);
+                        LegacyCompatSystem.performLegacyCompats(loadedPoleDefinition);
+                        JSONParser.validateFields(loadedPoleDefinition, "/", 1);
+                        loadedDefinition = loadedPoleDefinition;
+                        break;
+                    }
+                    case BULLET: {
+                        JSONBullet bulletDefinition = (JSONBullet) definitionToOverride;
+                        JSONBullet loadedBulletDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONBullet.class, bulletDefinition.packID, bulletDefinition.systemName);
+                        LegacyCompatSystem.performLegacyCompats(loadedBulletDefinition);
+                        JSONParser.validateFields(loadedBulletDefinition, "/", 1);
+                        bulletDefinition.bullet = loadedBulletDefinition.bullet;
+                        loadedDefinition = loadedBulletDefinition;
+                        break;
+                    }
+                    case ITEM: {
+                        JSONItem itemDefinition = (JSONItem) definitionToOverride;
+                        JSONItem loadedItemDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONItem.class, itemDefinition.packID, itemDefinition.systemName);
+                        LegacyCompatSystem.performLegacyCompats(loadedItemDefinition);
+                        JSONParser.validateFields(loadedItemDefinition, "/", 1);
+                        itemDefinition.item = loadedItemDefinition.item;
+                        itemDefinition.booklet = loadedItemDefinition.booklet;
+                        itemDefinition.food = loadedItemDefinition.food;
+                        itemDefinition.weapon = loadedItemDefinition.weapon;
+                        loadedDefinition = loadedItemDefinition;
+                        break;
+                    }
+                    case PANEL: {
+                        JSONPanel panelDefinition = (JSONPanel) definitionToOverride;
+                        JSONPanel loadedPanelDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONPanel.class, panelDefinition.packID, panelDefinition.systemName);
+                        LegacyCompatSystem.performLegacyCompats(loadedPanelDefinition);
+                        JSONParser.validateFields(loadedPanelDefinition, "/", 1);
+                        panelDefinition.panel = loadedPanelDefinition.panel;
+                        loadedDefinition = loadedPanelDefinition;
+                        break;
+                    }
+                    default:
+                        return "\nERROR: Attempted to hotload unsuppoorted JSON type:" + definitionToOverride.classification;
                 }
-                case PART: {
-                    JSONPart partDefinition = (JSONPart) definitionToOverride;
-                    JSONPart loadedPartDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONPart.class, partDefinition.packID, partDefinition.systemName);
-                    LegacyCompatSystem.performLegacyCompats(loadedPartDefinition);
-                    JSONParser.validateFields(loadedPartDefinition, "/", 1);
-                    partDefinition.generic = loadedPartDefinition.generic;
-                    partDefinition.engine = loadedPartDefinition.engine;
-                    partDefinition.ground = loadedPartDefinition.ground;
-                    partDefinition.propeller = loadedPartDefinition.propeller;
-                    partDefinition.seat = loadedPartDefinition.seat;
-                    partDefinition.gun = loadedPartDefinition.gun;
-                    partDefinition.interactable = loadedPartDefinition.interactable;
-                    partDefinition.effector = loadedPartDefinition.effector;
-                    loadedDefinition = loadedPartDefinition;
-                    break;
-                }
-                case INSTRUMENT: {
-                    JSONInstrument instrumentDefinition = (JSONInstrument) definitionToOverride;
-                    JSONInstrument loadedInstrumentDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONInstrument.class, instrumentDefinition.packID, instrumentDefinition.systemName);
-                    LegacyCompatSystem.performLegacyCompats(loadedInstrumentDefinition);
-                    JSONParser.validateFields(loadedInstrumentDefinition, "/", 1);
-                    instrumentDefinition.components = loadedInstrumentDefinition.components;
-                    loadedDefinition = loadedInstrumentDefinition;
-                    break;
-                }
-                case DECOR: {
-                    JSONDecor decorDefinition = (JSONDecor) definitionToOverride;
-                    JSONDecor loadedDecorDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONDecor.class, decorDefinition.packID, decorDefinition.systemName);
-                    LegacyCompatSystem.performLegacyCompats(loadedDecorDefinition);
-                    JSONParser.validateFields(loadedDecorDefinition, "/", 1);
-                    decorDefinition.decor = loadedDecorDefinition.decor;
-                    loadedDefinition = loadedDecorDefinition;
-                    break;
-                }
-                case ROAD: {
-                    JSONRoadComponent roadDefinition = (JSONRoadComponent) definitionToOverride;
-                    JSONRoadComponent loadedRoadDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONRoadComponent.class, roadDefinition.packID, roadDefinition.systemName);
-                    LegacyCompatSystem.performLegacyCompats(loadedRoadDefinition);
-                    JSONParser.validateFields(loadedRoadDefinition, "/", 1);
-                    roadDefinition.road = loadedRoadDefinition.road;
-                    loadedDefinition = loadedRoadDefinition;
-                    break;
-                }
-                case POLE: {
-                    JSONPoleComponent poleDefinition = (JSONPoleComponent) definitionToOverride;
-                    JSONPoleComponent loadedPoleDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONPoleComponent.class, poleDefinition.packID, poleDefinition.systemName);
-                    LegacyCompatSystem.performLegacyCompats(loadedPoleDefinition);
-                    JSONParser.validateFields(loadedPoleDefinition, "/", 1);
-                    loadedDefinition = loadedPoleDefinition;
-                    break;
-                }
-                case BULLET: {
-                    JSONBullet bulletDefinition = (JSONBullet) definitionToOverride;
-                    JSONBullet loadedBulletDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONBullet.class, bulletDefinition.packID, bulletDefinition.systemName);
-                    LegacyCompatSystem.performLegacyCompats(loadedBulletDefinition);
-                    JSONParser.validateFields(loadedBulletDefinition, "/", 1);
-                    bulletDefinition.bullet = loadedBulletDefinition.bullet;
-                    loadedDefinition = loadedBulletDefinition;
-                    break;
-                }
-                case ITEM: {
-                    JSONItem itemDefinition = (JSONItem) definitionToOverride;
-                    JSONItem loadedItemDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONItem.class, itemDefinition.packID, itemDefinition.systemName);
-                    LegacyCompatSystem.performLegacyCompats(loadedItemDefinition);
-                    JSONParser.validateFields(loadedItemDefinition, "/", 1);
-                    itemDefinition.item = loadedItemDefinition.item;
-                    itemDefinition.booklet = loadedItemDefinition.booklet;
-                    itemDefinition.food = loadedItemDefinition.food;
-                    itemDefinition.weapon = loadedItemDefinition.weapon;
-                    loadedDefinition = loadedItemDefinition;
-                    break;
-                }
-                case PANEL: {
-                    JSONPanel panelDefinition = (JSONPanel) definitionToOverride;
-                    JSONPanel loadedPanelDefinition = JSONParser.parseStream(Files.newInputStream(jsonFile.toPath()), JSONPanel.class, panelDefinition.packID, panelDefinition.systemName);
-                    LegacyCompatSystem.performLegacyCompats(loadedPanelDefinition);
-                    JSONParser.validateFields(loadedPanelDefinition, "/", 1);
-                    panelDefinition.panel = loadedPanelDefinition.panel;
-                    loadedDefinition = loadedPanelDefinition;
-                    break;
-                }
-                default:
-                    return "\nERROR: Attempted to hotload unsuppoorted JSON type:" + definitionToOverride.classification;
+            } else if (Objects.nonNull(definitionToOverride.classification)) {
+                loadedDefinition = definitionToOverride.classification.loadDefinition(jsonFile, definitionToOverride);
+            } else {
+                loadedDefinition = definitionToOverride;
             }
 
             //Do generic loading.

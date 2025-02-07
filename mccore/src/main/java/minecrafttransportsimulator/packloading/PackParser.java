@@ -1,15 +1,8 @@
 package minecrafttransportsimulator.packloading;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -239,7 +232,7 @@ public final class PackParser {
             try {
                 systemName = defaultItem.getKey();
                 ItemClassification classification = defaultItem.getValue();
-                AJSONBase itemDef = JSONParser.parseStream(InterfaceManager.coreInterface.getPackResource(prefixFolders + classification.toDirectory() + systemName + ".json"), classification.representingClass, packDef.packID, systemName);
+                AJSONBase itemDef = JSONParser.parseStream(InterfaceManager.coreInterface.getPackResource(prefixFolders + classification.toDirectory() + systemName + ".json"), classification.getRepresentingClass(), packDef.packID, systemName);
                 itemDef.packID = packID;
                 itemDef.systemName = systemName;
                 itemDef.classification = classification;
@@ -407,7 +400,7 @@ public final class PackParser {
                             //Check to make sure json isn't an item JSON or our pack definition.
                             if (!fileName.equals("packdefinition.json") && (structure.equals(PackStructure.MODULAR) ? !fileName.endsWith("_item.json") : entryFullPath.contains("jsondefs"))) {
                                 //Get classification and JSON class type to use with GSON system.
-                                ItemClassification classification;
+                                CustomItemClassification classification;
                                 try {
                                     classification = ItemClassification.fromDirectory(assetPath.substring(0, assetPath.indexOf("/") + 1));
                                 } catch (Exception e) {
@@ -419,7 +412,7 @@ public final class PackParser {
                                 String systemName = fileName.substring(0, fileName.length() - ".json".length());
                                 AJSONBase definition;
                                 try {
-                                    definition = JSONParser.parseStream(jarFile.getInputStream(entry), classification.representingClass, packDef.packID, systemName);
+                                    definition = JSONParser.parseStream(jarFile.getInputStream(entry), classification.getRepresentingClass(), packDef.packID, systemName);
                                 } catch (Exception e) {
                                     InterfaceManager.coreInterface.logError("Could not parse: " + packDef.packID + ":" + fileName);
                                     InterfaceManager.coreInterface.logError(e.getMessage());
@@ -487,23 +480,25 @@ public final class PackParser {
                 }
             } else {
                 AItemPack<?> item = null;
-                switch (itemDef.classification) {
-                    case INSTRUMENT:
-                        item = new ItemInstrument((JSONInstrument) itemDef);
-                        break;
-                    case ITEM:
-                        item = new ItemItem((JSONItem) itemDef);
-                        break;
-                    case PANEL:
-                        //Put the panel in the map in the registry.
-                        JSONPanel panelDef = (JSONPanel) itemDef;
-                        if (!panelMap.containsKey(panelDef.packID)) {
-                            panelMap.put(panelDef.packID, new HashMap<>());
+                if (itemDef.classification instanceof ItemClassification) {
+                    switch ((ItemClassification) itemDef.classification) {
+                        case INSTRUMENT:
+                            item = new ItemInstrument((JSONInstrument) itemDef);
+                            break;
+                        case ITEM:
+                            item = new ItemItem((JSONItem) itemDef);
+                            break;
+                        case PANEL:
+                            //Put the panel in the map in the registry.
+                            JSONPanel panelDef = (JSONPanel) itemDef;
+                            if (!panelMap.containsKey(panelDef.packID)) {
+                                panelMap.put(panelDef.packID, new HashMap<>());
+                            }
+                            panelMap.get(panelDef.packID).put(panelDef.systemName, panelDef);
+                            break;
+                        default: {
+                            throw new IllegalArgumentException("No corresponding classification found for asset: " + itemDef.prefixFolders + " Contact the mod author!");
                         }
-                        panelMap.get(panelDef.packID).put(panelDef.systemName, panelDef);
-                        break;
-                    default: {
-                        throw new IllegalArgumentException("No corresponding classification found for asset: " + itemDef.prefixFolders + " Contact the mod author!");
                     }
                 }
 
@@ -563,39 +558,43 @@ public final class PackParser {
         Map<String, AItemPack<?>> packItems = new HashMap<>();
         for (JSONSubDefinition subDefinition : subDefinitions) {
             AItemPack<?> item = null;
-            switch (mainDefinition.classification) {
-                case VEHICLE:
-                    item = new ItemVehicle((JSONVehicle) mainDefinition, subDefinition, sourcePackID);
-                    break;
-                case PART: {
-                    JSONPart partDef = (JSONPart) mainDefinition;
-                    for (AItemPartCreator creator : partCreators) {
-                        if (creator.isCreatorValid(partDef)) {
-                            item = creator.createItem(partDef, subDefinition, sourcePackID);
-                            break;
+            if (mainDefinition.classification instanceof ItemClassification) {
+                switch ((ItemClassification) mainDefinition.classification) {
+                    case VEHICLE:
+                        item = new ItemVehicle((JSONVehicle) mainDefinition, subDefinition, sourcePackID);
+                        break;
+                    case PART: {
+                        JSONPart partDef = (JSONPart) mainDefinition;
+                        for (AItemPartCreator creator : partCreators) {
+                            if (creator.isCreatorValid(partDef)) {
+                                item = creator.createItem(partDef, subDefinition, sourcePackID);
+                                break;
+                            }
                         }
+                        if (item == null) {
+                            InterfaceManager.coreInterface.logError("Was told to parse part " + partDef.packID + ":" + partDef.systemName + " with part type " + partDef.generic.type + ", but that's not a valid type for creating a part.");
+                            return;
+                        }
+                        break;
                     }
-                    if (item == null) {
-                        InterfaceManager.coreInterface.logError("Was told to parse part " + partDef.packID + ":" + partDef.systemName + " with part type " + partDef.generic.type + ", but that's not a valid type for creating a part.");
-                        return;
+                    case DECOR:
+                        item = new ItemDecor((JSONDecor) mainDefinition, subDefinition, sourcePackID);
+                        break;
+                    case POLE:
+                        item = new ItemPoleComponent((JSONPoleComponent) mainDefinition, subDefinition, sourcePackID);
+                        break;
+                    case ROAD:
+                        item = new ItemRoadComponent((JSONRoadComponent) mainDefinition, subDefinition, sourcePackID);
+                        break;
+                    case BULLET:
+                        item = new ItemBullet((JSONBullet) mainDefinition, subDefinition, sourcePackID);
+                        break;
+                    default: {
+                        throw new IllegalArgumentException("A classification for a normal item is trying to register as a multi-model provider.  This is an error in the core mod.  Contact the mod author.  Asset being loaded is: " + mainDefinition.packID + ":" + mainDefinition.systemName);
                     }
-                    break;
                 }
-                case DECOR:
-                    item = new ItemDecor((JSONDecor) mainDefinition, subDefinition, sourcePackID);
-                    break;
-                case POLE:
-                    item = new ItemPoleComponent((JSONPoleComponent) mainDefinition, subDefinition, sourcePackID);
-                    break;
-                case ROAD:
-                    item = new ItemRoadComponent((JSONRoadComponent) mainDefinition, subDefinition, sourcePackID);
-                    break;
-                case BULLET:
-                    item = new ItemBullet((JSONBullet) mainDefinition, subDefinition, sourcePackID);
-                    break;
-                default: {
-                    throw new IllegalArgumentException("A classification for a normal item is trying to register as a multi-model provider.  This is an error in the core mod.  Contact the mod author.  Asset being loaded is: " + mainDefinition.packID + ":" + mainDefinition.systemName);
-                }
+            } else if (Objects.nonNull(mainDefinition.classification)) {
+                item = mainDefinition.classification.getItem(mainDefinition, subDefinition, sourcePackID);
             }
 
             //Add the pack item to the map.  We need to make sure all subDefinitions
